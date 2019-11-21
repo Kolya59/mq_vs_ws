@@ -1,7 +1,10 @@
 package main
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"time"
@@ -62,8 +65,24 @@ func main() {
 		log.Fatal().Err(err).Msg("Failed to set DB connection")
 	}*/
 
+	caCert, err := ioutil.ReadFile("client.crt")
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to read client.crt")
+	}
+	caCertPool := x509.NewCertPool()
+	caCertPool.AppendCertsFromPEM(caCert)
+	cfg := &tls.Config{
+		ClientAuth: tls.RequireAndVerifyClientCert,
+		ClientCAs:  caCertPool,
+	}
+	srv := &http.Server{
+		Addr:      fmt.Sprintf("%s:%d", opts.Host, opts.Port),
+		Handler:   r,
+		TLSConfig: cfg,
+	}
+
 	// TODO Add graceful shutdown
-	if err := http.ListenAndServe(fmt.Sprintf("%s:%d", opts.Host, opts.Port), r); err != nil {
+	if err := srv.ListenAndServeTLS("server.crt", "server.key"); err != nil {
 		log.Error().Err(err).Msg("Failed to stop server")
 	}
 }
