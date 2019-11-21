@@ -1,7 +1,10 @@
 package main
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
+	"io/ioutil"
 	"net/url"
 	"os"
 	"time"
@@ -53,8 +56,27 @@ func main() {
 	u := url.URL{Scheme: "ws", Host: fmt.Sprintf("%s:%d", opts.Host, opts.Port), Path: "/"}
 	log.Info().Msgf("connecting to %s", u.String())
 
+	// Setup HTTPS
+	caCert, err := ioutil.ReadFile("server.crt")
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to read server sert file")
+	}
+	caCertPool := x509.NewCertPool()
+	caCertPool.AppendCertsFromPEM(caCert)
+
+	cert, err := tls.LoadX509KeyPair("client.crt", "client.key")
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to read client sert file")
+	}
+
+	dialer := websocket.DefaultDialer
+	dialer.TLSClientConfig = &tls.Config{
+		RootCAs:      caCertPool,
+		Certificates: []tls.Certificate{cert},
+	}
+
 	// Setup ws dial
-	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	c, _, err := dialer.Dial(u.String(), nil)
 	if err != nil {
 		log.Fatal().Err(err).Msg("dial")
 	}

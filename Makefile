@@ -34,4 +34,4 @@ build-ws-client:
 	go build -o ./bin/ws-client.bin ./cmd/ws/ws-client
 
 run-ws-client:
-	HOST=127.0.0.1 PORT=8081 ./bin/ws-client.bin
+	HOST=ec2-176-34-152-125.eu-west-1.compute.amazonaws.com PORT=8081 ./bin/ws-client.bin
