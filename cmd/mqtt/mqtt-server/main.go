@@ -3,20 +3,28 @@ package main
 import (
 	"fmt"
 	"net/url"
+	"os"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"github.com/jessevdk/go-flags"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
 const (
-	User         = "kolya59"
-	Password     = "123456"
-	Host         = "127.0.0.1"
-	Port         = "1883"
-	Topic        = "test"
-	CloudMQTTUrl = "mqtt://%s:%s@%s.cloudmqtt.com:%s/%s"
+	CloudMQTTUrl = "mqtt://%s:%s@%s:%d/%s"
 )
+
+var opts struct {
+	BrokerHost string `long:"host" env:"HOST" description:"Host" required:"true"`
+	BrokerPort int    `long:"port" env:"PORT" description:"Port" required:"true"`
+	User       string `long:"user" env:"USER" description:"Username" required:"true"`
+	Password   string `long:"password" env:"PASS" description:"Password" required:"true"`
+	Topic      string `long:"topic" env:"TOPIC" description:"Topic" required:"true"`
+
+	LogLevel string `long:"log_level" env:"LOG_LEVEL" description:"Log level for zerolog" required:"false"`
+}
 
 func createClientOptions(clientId string, uri *url.URL) *mqtt.ClientOptions {
 	opts := mqtt.NewClientOptions()
@@ -56,7 +64,27 @@ func SendTime(uri *url.URL, topic string) {
 }
 
 func main() {
-	uri, err := url.Parse(fmt.Sprintf(CloudMQTTUrl, User, Password, Host, Port, Topic))
+	// Log initialization
+	zerolog.MessageFieldName = "MESSAGE"
+	zerolog.LevelFieldName = "LEVEL"
+	zerolog.ErrorFieldName = "ERROR"
+	zerolog.TimestampFieldName = "TIME"
+	zerolog.CallerFieldName = "CALLER"
+	log.Logger = log.Output(os.Stderr).With().Str("PROGRAM", "firmware-update-server").Caller().Logger()
+
+	// Parse flags
+	_, err := flags.ParseArgs(&opts, os.Args)
+	if err != nil {
+		log.Fatal().Msgf("Could not parse flags: %v", err)
+	}
+
+	level, err := zerolog.ParseLevel(opts.LogLevel)
+	if err != nil || level == zerolog.NoLevel {
+		level = zerolog.InfoLevel
+	}
+	zerolog.SetGlobalLevel(level)
+
+	uri, err := url.Parse(fmt.Sprintf(CloudMQTTUrl, opts.User, opts.Password, opts.BrokerHost, opts.BrokerPort, opts.Topic))
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to parse uri")
 	}

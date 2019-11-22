@@ -1,10 +1,7 @@
 package main
 
 import (
-	"crypto/tls"
-	"crypto/x509"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"time"
@@ -18,12 +15,6 @@ import (
 )
 
 var opts struct {
-	DbHost     string `long:"database_host" env:"DB_HOST" description:"Database host" required:"true"`
-	DbPort     string `long:"database_port" env:"DB_PORT" description:"Database port" required:"true"`
-	DbName     string `long:"database_name" env:"DB_NAME" description:"Database name" required:"true"`
-	DbUser     string `long:"database_username" env:"DB_USER" description:"Database username" required:"true"`
-	DbPassword string `long:"database_password" env:"DB_PASSWORD" description:"Database password" required:"true"`
-
 	Host string `long:"host" env:"HOST" description:"Host" required:"true"`
 	Port int    `long:"port" env:"PORT" description:"Port" required:"true"`
 
@@ -65,24 +56,24 @@ func main() {
 		log.Fatal().Err(err).Msg("Failed to set DB connection")
 	}*/
 
-	caCert, err := ioutil.ReadFile("client.crt")
-	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to read client.crt")
-	}
-	caCertPool := x509.NewCertPool()
-	caCertPool.AppendCertsFromPEM(caCert)
-	cfg := &tls.Config{
-		ClientAuth: tls.RequireAndVerifyClientCert,
-		ClientCAs:  caCertPool,
-	}
+	// caCert, err := ioutil.ReadFile("client.crt")
+	// if err != nil {
+	// 	log.Fatal().Err(err).Msg("Failed to read client.crt")
+	// }
+	// caCertPool := x509.NewCertPool()
+	// caCertPool.AppendCertsFromPEM(caCert)
+	// cfg := &tls.Config{
+	// 	ClientAuth: tls.RequireAndVerifyClientCert,
+	// 	ClientCAs:  caCertPool,
+	// }
 	srv := &http.Server{
-		Addr:      fmt.Sprintf("%s:%d", opts.Host, opts.Port),
-		Handler:   r,
-		TLSConfig: cfg,
+		Addr:    fmt.Sprintf("%s:%d", opts.Host, opts.Port),
+		Handler: r,
+		// TLSConfig: cfg,
 	}
 
 	// TODO Add graceful shutdown
-	if err := srv.ListenAndServeTLS("server.crt", "server.key"); err != nil {
+	if err := srv.ListenAndServe(); err != nil {
 		log.Error().Err(err).Msg("Failed to stop server")
 	}
 }
