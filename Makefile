@@ -25,7 +25,7 @@ build-ws-server:
 	go build -o ./bin/ws-server.bin ./cmd/ws/ws-server
 
 run-ws-server:
-	HOST=localhost PORT=8081 ./bin/ws-server.bin
+	HOST=172.31.32.155 PORT=8081 ./bin/ws-server.bin
 
 # WebSocket client
 ws-client: build-ws-client run-ws-client
